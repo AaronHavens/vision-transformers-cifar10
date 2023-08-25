@@ -21,6 +21,14 @@ class PreNorm(nn.Module):
     def forward(self, x, **kwargs):
         return self.fn(self.norm(x), **kwargs)
 
+class PreProject(nn.Module):
+    def __init__(self, dim, fn):
+        super().__init__()
+        self.project = LayerProject(p=2, radius=1.0)
+        self.fn = fn
+    def forward(self, x, **kwargs):
+        return self.fn(self.project(x), **kwargs)
+
 class FeedForward(nn.Module):
     def __init__(self, dim, hidden_dim, dropout = 0.):
         super().__init__()
@@ -35,7 +43,7 @@ class FeedForward(nn.Module):
         return self.net(x)
 
 
-class Projection(nn.Module):
+class LayerProject(nn.Module):
     def __init__(self, p=2, radius=1.0):
         super().__init__()
         self.radius = radius
@@ -86,10 +94,11 @@ class Transformer(nn.Module):
             #     PreNorm(dim, FeedForward(dim, mlp_dim, dropout = dropout))
             # ]))
             self.layers.append(nn.ModuleList([
-                nn.LayerNorm(dim),
-                Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout),
-                nn.LayerNorm(dim),
-                FeedForward(dim, mlp_dim, dropout = dropout)]))
+                PreProject(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+                PreProject(dim, FeedForward(dim, mlp_dim, dropout = dropout))
+            ]))
+
+
     def forward(self, x):
         for attn, ff in self.layers:
             x = attn(x) + x
