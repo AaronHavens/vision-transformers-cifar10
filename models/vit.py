@@ -14,20 +14,13 @@ def pair(t):
 # classes
 
 class PreNorm(nn.Module):
-    def __init__(self, dim, fn):
+    def __init__(self, dim, norm_fn, net_fn):
         super().__init__()
-        self.norm = nn.LayerNorm(dim)
+        self.norm = norm_fn(dim)#nn.LayerNorm(dim)
         self.fn = fn
     def forward(self, x, **kwargs):
         return self.fn(self.norm(x), **kwargs)
 
-class PreProject(nn.Module):
-    def __init__(self, dim, fn):
-        super().__init__()
-        self.project = LayerProject(p=2, radius=1.0)
-        self.fn = fn
-    def forward(self, x, **kwargs):
-        return self.fn(self.project(x), **kwargs)
 
 class FeedForward(nn.Module):
     def __init__(self, dim, hidden_dim, dropout = 0.):
@@ -54,6 +47,24 @@ class LayerProject(nn.Module):
         mask = (norm_x < self.radius).to(x.device).float()
         x = mask * x + (1 - mask) * x / norm_x
         return x
+    def __repr__(self):
+        return "LayerProject"
+
+class CenterNorm(nn.Module):
+
+    def __init__(self, normalized_shape):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(normalized_shape))
+        self.bias = nn.Parameter(torch.zeros(normalized_shape))
+        self.scale = normalized_shape/(normalized_shape-1.0)
+    def forward(self, x):
+        u = x.mean(-1, keepdim=True)
+        x = self.scale*(x - u)
+        x = self.weight[None, None, :] * x + self.bias[None, None, :]
+        return x
+
+    def __repr__(self):
+        return "CenterNorm()"
 
 class OrthogonLin(nn.Linear):
     def __init__(self, in_features, out_features, bias=True, scale=1.0):
@@ -81,9 +92,9 @@ class Attention(nn.Module):
 
         self.attend = nn.Softmax(dim = -1)
         self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-        # self.to_q = OrthogonLin(dim, inner_dim, bias=False)
-        # self.to_k = OrthogonLin(dim, inner_dim, bias=False)
-        # self.to_v = OrthogonLin(dim, inner_dim, bias=False)
+        self.to_q = OrthogonLin(dim, inner_dim, bias=False)
+        self.to_k = OrthogonLin(dim, inner_dim, bias=False)
+        self.to_v = OrthogonLin(dim, inner_dim, bias=False)
 
         self.to_out = nn.Sequential(
             nn.Linear(inner_dim, dim),
@@ -107,14 +118,14 @@ class Transformer(nn.Module):
         super().__init__()
         self.layers = nn.ModuleList([])
         for _ in range(depth):
-            # self.layers.append(nn.ModuleList([
-            #     PreNorm(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-            #     PreNorm(dim, FeedForward(dim, mlp_dim, dropout = dropout))
-            # ]))
             self.layers.append(nn.ModuleList([
-                PreProject(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-                PreProject(dim, FeedForward(dim, mlp_dim, dropout = dropout))
+                PreNorm(dim, CenterNorm(dim),Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+                PreNorm(dim, CenterNorm(dim),FeedForward(dim, mlp_dim, dropout = dropout))
             ]))
+            # self.layers.append(nn.ModuleList([
+            #     PreProject(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+            #     PreProject(dim, FeedForward(dim, mlp_dim, dropout = dropout))
+            # ]))
 
 
     def forward(self, x):
