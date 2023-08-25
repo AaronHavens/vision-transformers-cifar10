@@ -223,7 +223,7 @@ elif args.net=="swin":
 if 'cuda' in device:
     print(device)
     print("using data parallel")
-    net = torch.nn.DataParallel(net) # make parallel
+    net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()//2)) # make parallel
     cudnn.benchmark = True
 
 if args.resume:
