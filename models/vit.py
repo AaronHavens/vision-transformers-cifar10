@@ -14,7 +14,7 @@ def pair(t):
 # classes
 
 class PreNorm(nn.Module):
-    def __init__(self, dim, norm_fn, net_fn):
+    def __init__(self, dim, norm_fn, fn):
         super().__init__()
         self.norm = norm_fn#nn.LayerNorm(dim)
         self.fn = fn
