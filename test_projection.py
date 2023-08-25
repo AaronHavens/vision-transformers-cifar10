@@ -1,8 +1,8 @@
 import torch
-from models.vit import Projection
+from models.vit import LayerProject
 
 X = torch.rand((10,3))
-F = Projection(p=2, radius=1.0)
+F = LayerProject(p=2, radius=1.0)
 
 Z = F(X)
 

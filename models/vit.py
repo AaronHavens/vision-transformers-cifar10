@@ -51,9 +51,24 @@ class LayerProject(nn.Module):
 
     def forward(self, x):
         norm_x = torch.linalg.vector_norm(x, ord=self.p, dim=1).unsqueeze(1)
-        mask = (norm_x < self.radius).float()
+        mask = (norm_x < self.radius).to(x.device).float()
         x = mask * x + (1 - mask) * x / norm_x
         return x
+
+class OrthogonLin(nn.Linear):
+    def __init__(self, in_features, out_features, bias=True, scale=1.0):
+        super().__init__(in_features, out_features, bias)
+        self.alpha = nn.Parameter(torch.ones(1, dtype=torch.float32, requires_grad=True))
+        self.alpha.data = self.weight.norm()
+        self.scale = scale
+        self.Q = None
+            
+    def forward(self, x):
+        if self.training or self.Q is None:
+            self.Q = cayley(self.alpha * self.weight / self.weight.norm())
+        Q = self.Q if self.training else self.Q.detach()
+        y = F.linear(self.scale * x, Q, self.bias)
+        return y
 
 class Attention(nn.Module):
     def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0.):
@@ -66,6 +81,9 @@ class Attention(nn.Module):
 
         self.attend = nn.Softmax(dim = -1)
         self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
+        # self.to_q = OrthogonLin(dim, inner_dim, bias=False)
+        # self.to_k = OrthogonLin(dim, inner_dim, bias=False)
+        # self.to_v = OrthogonLin(dim, inner_dim, bias=False)
 
         self.to_out = nn.Sequential(
             nn.Linear(inner_dim, dim),
