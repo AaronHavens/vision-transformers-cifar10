@@ -341,7 +341,7 @@ for epoch in range(start_epoch, args.n_epochs):
         writer = csv.writer(f, lineterminator='\n')
         writer.writerow(list_loss) 
         writer.writerow(list_acc) 
-    print(list_loss)
+    #print(list_loss)
 
 # writeout wandb
 if usewandb:
