@@ -89,7 +89,7 @@ class Transformer(nn.Module):
                 nn.LayerNorm(dim),
                 Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout),
                 nn.LayerNorm(dim),
-                Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)]))
+                FeedForward(dim, mlp_dim, dropout = dropout)]))
     def forward(self, x):
         for attn, ff in self.layers:
             x = attn(x) + x
