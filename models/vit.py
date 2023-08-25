@@ -34,6 +34,19 @@ class FeedForward(nn.Module):
     def forward(self, x):
         return self.net(x)
 
+
+class Projection(nn.Module):
+    def __init__(self, p=2, radius=1.0):
+        super().__init__()
+        self.radius = radius
+        self.p = p
+
+    def forward(self, x):
+        norm_x = torch.linalg.vector_norm(x, ord=self.p, dim=1).unsqueeze(1)
+        mask = (norm_x < self.radius).float()
+        x = mask * x + (1 - mask) * x / norm_x
+        return x
+
 class Attention(nn.Module):
     def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0.):
         super().__init__()
@@ -68,10 +81,15 @@ class Transformer(nn.Module):
         super().__init__()
         self.layers = nn.ModuleList([])
         for _ in range(depth):
+            # self.layers.append(nn.ModuleList([
+            #     PreNorm(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+            #     PreNorm(dim, FeedForward(dim, mlp_dim, dropout = dropout))
+            # ]))
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-                PreNorm(dim, FeedForward(dim, mlp_dim, dropout = dropout))
-            ]))
+                nn.LayerNorm(dim),
+                Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout),
+                nn.LayerNorm(dim),
+                Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)]))
     def forward(self, x):
         for attn, ff in self.layers:
             x = attn(x) + x
