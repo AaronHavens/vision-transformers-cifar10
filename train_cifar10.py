@@ -31,8 +31,7 @@ from models.vit import ViT
 from models.convmixer import ConvMixer
 
 
-from data_utils import get_model, get_dataset
-from da import CutMix, MixUp
+from data_utils import get_dataset
 
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')

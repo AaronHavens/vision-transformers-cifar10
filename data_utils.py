@@ -9,7 +9,6 @@ from da import RandomCropPaste
 def get_transform(args):
     train_transform = []
     test_transform = []
-    test_transform += [transforms.Resize(args.size)]
 
     train_transform += [
         transforms.RandomCrop(size=args.size, padding=args.padding)
@@ -22,11 +21,12 @@ def get_transform(args):
             print(f"No AutoAugment for {args.dataset}")   
 
     train_transform += [
+        transforms.Resize(args.size),
         transforms.ToTensor(),
         transforms.Normalize(mean=args.mean, std=args.std)
     ]
-    if args.rcpaste:
-        train_transform += [RandomCropPaste(size=args.size)]
+    # if args.rcpaste:
+    #     train_transform += [RandomCropPaste(size=args.size)]
     
     test_transform += [
         transforms.Resize(args.size),
