@@ -30,6 +30,10 @@ from randomaug import RandAugment
 from models.vit import ViT
 from models.convmixer import ConvMixer
 
+
+from data_utils import get_model, get_dataset
+from da import CutMix, MixUp
+
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=1e-4, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4
@@ -48,7 +52,9 @@ parser.add_argument('--dimhead', default="512", type=int)
 parser.add_argument('--convkernel', default='8', type=int, help="parameter for convmixer")
 
 args = parser.parse_args()
-
+args.dataset = 'c10'
+args.rcpaste = True
+args.autoaugment = True
 # take in args
 usewandb = ~args.nowandb
 if usewandb:
@@ -74,31 +80,34 @@ if args.net=="vit_timm":
     size = 384
 else:
     size = imsize
+args.size = size
+# transform_train = transforms.Compose([
+#     transforms.RandomCrop(32, padding=4),
+#     transforms.Resize(size),
+#     transforms.RandomHorizontalFlip(),
+#     transforms.ToTensor(),
+#     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+# ])
 
-transform_train = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.Resize(size),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
+# transform_test = transforms.Compose([
+#     transforms.Resize(size),
+#     transforms.ToTensor(),
+#     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+# ])
 
-transform_test = transforms.Compose([
-    transforms.Resize(size),
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
+# # Add RandAugment with N, M(hyperparameter)
+# if aug:  
+#     N = 2; M = 14;
+#     transform_train.transforms.insert(0, RandAugment(N, M))
 
-# Add RandAugment with N, M(hyperparameter)
-if aug:  
-    N = 2; M = 14;
-    transform_train.transforms.insert(0, RandAugment(N, M))
+trainset, testset = get_dataset(args)
+
 
 # Prepare dataset
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
+#trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 
-testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
+#testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=8)
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
