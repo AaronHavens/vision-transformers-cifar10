@@ -61,7 +61,7 @@ class CenterNorm(nn.Module):
         u = x.mean(-1, keepdim=True)
         x = self.scale*(x - u)
         x = self.weight[None, None, :] * x + self.bias[None, None, :]
-        return x
+        return x.squeeze()
 
     def __repr__(self):
         return "CenterNorm()"
@@ -166,8 +166,8 @@ class ViT(nn.Module):
         self.to_latent = nn.Identity()
 
         self.mlp_head = nn.Sequential(
-            nn.LayerNorm(dim),
-            #CenterNorm(dim),
+            #nn.LayerNorm(dim),
+            CenterNorm(dim),
             nn.Linear(dim, num_classes)
         )
 
