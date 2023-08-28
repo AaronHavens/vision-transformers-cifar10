@@ -166,8 +166,8 @@ class ViT(nn.Module):
         self.to_latent = nn.Identity()
 
         self.mlp_head = nn.Sequential(
-            nn.LayerNorm(dim),
-            #CenterNorm(dim),
+            #nn.LayerNorm(dim),
+            CenterNorm(dim),
             nn.Linear(dim, num_classes)
         )
 
