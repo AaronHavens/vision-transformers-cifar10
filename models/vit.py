@@ -102,6 +102,7 @@ class Attention(nn.Module):
         ) if project_out else nn.Identity()
 
     def forward(self, x):
+        print(x.shape)
         qkv = self.to_qkv(x).chunk(3, dim = -1)
         #q = self.to_q(x)
         #k = self.to_k(x)
