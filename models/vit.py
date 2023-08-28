@@ -102,7 +102,7 @@ class Attention(nn.Module):
         ) if project_out else nn.Identity()
 
     def forward(self, x):
-        print(x.shape)
+        #print(x.shape)
         qkv = self.to_qkv(x).chunk(3, dim = -1)
         #q = self.to_q(x)
         #k = self.to_k(x)
@@ -113,9 +113,9 @@ class Attention(nn.Module):
 
         attn = self.attend(dots)
         out = torch.matmul(attn, v)
-        print(out.shape)
+        #print(out.shape)
         out = rearrange(out, 'b h n d -> b n (h d)')
-        print(out.shape, self.heads)
+        #print(out.shape, self.heads)
         return self.to_out(out)
 
 class Transformer(nn.Module):
@@ -185,5 +185,4 @@ class ViT(nn.Module):
         x = x.mean(dim = 1) if self.pool == 'mean' else x[:, 0]
 
         x = self.to_latent(x)
-        mlp_x = self.mlp_head(x)
-        print(mlp_x.shape)
+        return self.mlp_head(x)
