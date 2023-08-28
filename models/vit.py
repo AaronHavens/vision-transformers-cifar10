@@ -92,9 +92,9 @@ class Attention(nn.Module):
 
         self.attend = nn.Softmax(dim = -1)
         self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-        self.to_q = OrthogonLin(dim, inner_dim, bias=False)
-        self.to_k = OrthogonLin(dim, inner_dim, bias=False)
-        self.to_v = OrthogonLin(dim, inner_dim, bias=False)
+        # self.to_q = OrthogonLin(dim, inner_dim, bias=False)
+        # self.to_k = OrthogonLin(dim, inner_dim, bias=False)
+        # self.to_v = OrthogonLin(dim, inner_dim, bias=False)
 
         self.to_out = nn.Sequential(
             nn.Linear(inner_dim, dim),
@@ -103,14 +103,17 @@ class Attention(nn.Module):
 
     def forward(self, x):
         qkv = self.to_qkv(x).chunk(3, dim = -1)
+        #q = self.to_q(x)
+        #k = self.to_k(x)
+        #v = self.to_v(x)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
 
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
 
         attn = self.attend(dots)
-
         out = torch.matmul(attn, v)
         out = rearrange(out, 'b h n d -> b n (h d)')
+        print(out.shape, self.heads)
         return self.to_out(out)
 
 class Transformer(nn.Module):
@@ -161,7 +164,7 @@ class ViT(nn.Module):
         self.to_latent = nn.Identity()
 
         self.mlp_head = nn.Sequential(
-            nn.LayerNorm(dim),
+            nn.CenterNorm(dim),
             nn.Linear(dim, num_classes)
         )
 
