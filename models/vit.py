@@ -112,6 +112,7 @@ class Attention(nn.Module):
 
         attn = self.attend(dots)
         out = torch.matmul(attn, v)
+        print(out.shape)
         out = rearrange(out, 'b h n d -> b n (h d)')
         print(out.shape, self.heads)
         return self.to_out(out)
