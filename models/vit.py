@@ -66,6 +66,19 @@ class CenterNorm(nn.Module):
     def __repr__(self):
         return "CenterNorm()"
 
+# from www.github.com/acfr/LBDN
+def cayley(W):
+    if len(W.shape) == 2:
+        return cayley(W[None])[0]
+    _, cout, cin = W.shape 
+    if cin > cout:
+        return cayley(W.transpose(1, 2)).transpose(1, 2)
+    U, V = W[:, :cin], W[:, cin:]
+    I = torch.eye(cin, dtype=W.dtype, device=W.device)[None, :, :]
+    A = U - U.conj().transpose(1, 2) + V.conj().transpose(1, 2) @ V
+    iIpA = torch.inverse(I + A)
+    return torch.cat((iIpA @ (I - A), -2 * V @ iIpA), axis=1)
+    
 class OrthogonLin(nn.Linear):
     def __init__(self, in_features, out_features, bias=True, scale=1.0):
         super().__init__(in_features, out_features, bias)
