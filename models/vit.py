@@ -26,10 +26,10 @@ class FeedForward(nn.Module):
     def __init__(self, dim, hidden_dim, dropout = 0.):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(dim, hidden_dim),
+            nn.OrthogonLin(dim, hidden_dim),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(hidden_dim, dim),
+            nn.OrthogonLin(hidden_dim, dim),
             nn.Dropout(dropout)
         )
     def forward(self, x):
@@ -92,16 +92,16 @@ class Attention(nn.Module):
 
         self.attend = nn.Softmax(dim = -1)
         #self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-        # self.to_q = OrthogonLin(dim, inner_dim, bias=False)
-        # self.to_k = OrthogonLin(dim, inner_dim, bias=False)
-        # self.to_v = OrthogonLin(dim, inner_dim, bias=False)
-        self.to_q = nn.Linear(dim, inner_dim , bias = False)
-        self.to_k = nn.Linear(dim, inner_dim , bias = False)
-        self.to_v = nn.Linear(dim, inner_dim , bias = False)
+        self.to_q = OrthogonLin(dim, inner_dim, bias=False)
+        self.to_k = OrthogonLin(dim, inner_dim, bias=False)
+        self.to_v = OrthogonLin(dim, inner_dim, bias=False)
+        # self.to_q = nn.Linear(dim, inner_dim , bias = False)
+        # self.to_k = nn.Linear(dim, inner_dim , bias = False)
+        # self.to_v = nn.Linear(dim, inner_dim , bias = False)
 
 
         self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
+            nn.OrthogonLin(inner_dim, dim),
             nn.Dropout(dropout)
         ) if project_out else nn.Identity()
 
