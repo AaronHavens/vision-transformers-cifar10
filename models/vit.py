@@ -107,6 +107,8 @@ class Attention(nn.Module):
         #q = self.to_q(x)
         #k = self.to_k(x)
         #v = self.to_v(x)
+        print(qkv)
+        print(qkv.shape)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
 
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
@@ -166,7 +168,6 @@ class ViT(nn.Module):
         self.to_latent = nn.Identity()
 
         self.mlp_head = nn.Sequential(
-            #nn.LayerNorm(dim),
             CenterNorm(dim),
             nn.Linear(dim, num_classes)
         )
