@@ -26,10 +26,10 @@ class FeedForward(nn.Module):
     def __init__(self, dim, hidden_dim, dropout = 0.):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(dim, hidden_dim),
+            OrthogonLin(dim, hidden_dim),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(hidden_dim, dim),
+            OrthogonLin(hidden_dim, dim),
             nn.Dropout(dropout)
         )
     def forward(self, x):
@@ -114,7 +114,7 @@ class Attention(nn.Module):
 
 
         self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
+            OrthogonLin(inner_dim, dim),
             nn.Dropout(dropout)
         ) if project_out else nn.Identity()
 
@@ -139,10 +139,14 @@ class Transformer(nn.Module):
     def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):
         super().__init__()
         self.layers = nn.ModuleList([])
-        for _ in range(depth):
+        for i in range(depth):
+            if i == 0:
+                norm = CenterNorm(dim)
+            else:
+                norm = nn.Identity()
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, CenterNorm(dim),Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-                PreNorm(dim, CenterNorm(dim),FeedForward(dim, mlp_dim, dropout = dropout))
+                PreNorm(dim, norm ,Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+                PreNorm(dim, nn.Identity(), FeedForward(dim, mlp_dim, dropout = dropout))
             ]))
             # self.layers.append(nn.ModuleList([
             #     PreProject(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
@@ -170,7 +174,7 @@ class ViT(nn.Module):
 
         self.to_patch_embedding = nn.Sequential(
             Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
-            nn.Linear(patch_dim, dim),
+            OrthogonLin(patch_dim, dim),
         )
 
         self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
@@ -183,8 +187,8 @@ class ViT(nn.Module):
         self.to_latent = nn.Identity()
 
         self.mlp_head = nn.Sequential(
-            CenterNorm(dim),
-            nn.Linear(dim, num_classes)
+            #CenterNorm(dim),
+            OrthogonLin(dim, num_classes)
         )
 
     def forward(self, img):
