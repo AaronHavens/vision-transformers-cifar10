@@ -26,10 +26,10 @@ class FeedForward(nn.Module):
     def __init__(self, dim, hidden_dim, dropout = 0.):
         super().__init__()
         self.net = nn.Sequential(
-            OrthogonLin(dim, hidden_dim),
+            nn.Linear(dim, hidden_dim),
             nn.GELU(),
             nn.Dropout(dropout),
-            OrthogonLin(hidden_dim, dim),
+            nn.Linear(hidden_dim, dim),
             nn.Dropout(dropout)
         )
     def forward(self, x):
@@ -105,16 +105,16 @@ class Attention(nn.Module):
 
         self.attend = nn.Softmax(dim = -1)
         #self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-        self.to_q = OrthogonLin(dim, inner_dim, bias=False)
-        self.to_k = OrthogonLin(dim, inner_dim, bias=False)
-        self.to_v = OrthogonLin(dim, inner_dim, bias=False)
-        # self.to_q = nn.Linear(dim, inner_dim , bias = False)
-        # self.to_k = nn.Linear(dim, inner_dim , bias = False)
-        # self.to_v = nn.Linear(dim, inner_dim , bias = False)
+        # self.to_q = OrthogonLin(dim, inner_dim, bias=False)
+        # self.to_k = OrthogonLin(dim, inner_dim, bias=False)
+        # self.to_v = OrthogonLin(dim, inner_dim, bias=False)
+        self.to_q = nn.Linear(dim, inner_dim , bias = False)
+        self.to_k = nn.Linear(dim, inner_dim , bias = False)
+        self.to_v = nn.Linear(dim, inner_dim , bias = False)
 
 
         self.to_out = nn.Sequential(
-            OrthogonLin(inner_dim, dim),
+            nn.Linear(inner_dim, dim),
             nn.Dropout(dropout)
         ) if project_out else nn.Identity()
 
@@ -170,7 +170,7 @@ class ViT(nn.Module):
 
         self.to_patch_embedding = nn.Sequential(
             Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
-            OrthogonLin(patch_dim, dim),
+            nn.Linear(patch_dim, dim),
         )
 
         self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
@@ -184,7 +184,7 @@ class ViT(nn.Module):
 
         self.mlp_head = nn.Sequential(
             CenterNorm(dim),
-            OrthogonLin(dim, num_classes)
+            nn.Linear(dim, num_classes)
         )
 
     def forward(self, img):
