@@ -78,7 +78,7 @@ def cayley(W):
     A = U - U.conj().transpose(1, 2) + V.conj().transpose(1, 2) @ V
     iIpA = torch.inverse(I + A)
     return torch.cat((iIpA @ (I - A), -2 * V @ iIpA), axis=1)
-    
+
 class OrthogonLin(nn.Linear):
     def __init__(self, in_features, out_features, bias=True, scale=1.0):
         super().__init__(in_features, out_features, bias)
@@ -91,7 +91,7 @@ class OrthogonLin(nn.Linear):
         if self.training or self.Q is None:
             self.Q = cayley(self.alpha * self.weight / self.weight.norm())
         Q = self.Q if self.training else self.Q.detach()
-        y = F.linear(self.scale * x, Q, self.bias)
+        y = nn.functional.linear(self.scale * x, Q, self.bias)
         return y
 
 class Attention(nn.Module):
