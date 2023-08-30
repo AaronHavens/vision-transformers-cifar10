@@ -121,7 +121,7 @@ class Attention(nn.Module):
 
 
         self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
+            OrthogonLin(inner_dim, dim, heads=heads),
             nn.Dropout(dropout)
         ) if project_out else nn.Identity()
 
