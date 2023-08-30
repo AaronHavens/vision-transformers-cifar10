@@ -79,6 +79,11 @@ def cayley(W):
     iIpA = torch.inverse(I + A)
     return torch.cat((iIpA @ (I - A), -2 * V @ iIpA), axis=1)
 
+def cayley_square(W):
+    S = W - W.T
+    I = torch.eye(W.shape[0]).to(W.device)
+    return 2*torch.inverse(I+S) - I
+
 class OrthogonLin(nn.Linear):
     def __init__(self, in_features, out_features, heads=8, bias=True, scale=1.0):
         super().__init__(in_features, out_features, bias)
@@ -87,16 +92,16 @@ class OrthogonLin(nn.Linear):
         self.scale = scale
         self.Q = None
         self.heads = heads
-        self.dim_head = in_features//heads
+        self.dim_head = out_features#in_features//heads
         
     def forward(self, x):
         if self.training or self.Q is None:
             Q_list = []
             for j in range(self.heads):
                 Wj = self.weight[:, j:j+self.dim_head]
-                Qj = cayley(self.alpha * Wj / Wj.norm())
+                Qj = cayley_square(self.alpha * Wj / Wj.norm())
                 Q_list.append(Qj)
-            self.Q = torch.hstack(Q_list)
+            self.Q = torch.hstack(Q_list) # need to put on device i think?
         Q = self.Q if self.training else self.Q.detach()
         y = nn.functional.linear(self.scale * x, Q, self.bias)
         return y
