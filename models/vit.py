@@ -97,10 +97,10 @@ class OrthogonLin(nn.Linear):
     def forward(self, x):
         if self.training or self.Q is None:
             Q_list = []
-            print(self.weight.shape)
+            print('W shape', self.weight.shape)
             for j in range(self.heads):
                 Wj = self.weight[:, j:j+self.dim_head]
-                print(Wj.shape)
+                print('Wj shape', Wj.shape)
                 Qj = cayley_square(self.alpha * Wj / Wj.norm())
                 Q_list.append(Qj)
             self.Q = torch.hstack(Q_list) # need to put on device i think?
