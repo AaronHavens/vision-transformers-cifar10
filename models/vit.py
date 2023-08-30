@@ -92,11 +92,12 @@ class OrthogonLin(nn.Linear):
         self.scale = scale
         self.Q = None
         self.heads = heads
-        self.dim_head = out_features#in_features//heads
+        self.dim_head = in_features//heads
         
     def forward(self, x):
         if self.training or self.Q is None:
             Q_list = []
+            print(self.weight.shape)
             for j in range(self.heads):
                 Wj = self.weight[:, j:j+self.dim_head]
                 print(Wj.shape)
