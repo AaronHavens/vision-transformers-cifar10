@@ -97,7 +97,7 @@ class OrthogonLin(nn.Linear):
     def forward(self, x):
         if self.training or self.Q is None:
             Q_list = []
-            print('W shape', self.weight.shape)
+            print('W shape', self.weight.shape, self.heads)
             for j in range(self.heads):
                 Wj = self.weight[:, j:j+self.dim_head]
                 print('Wj shape', Wj.shape)
