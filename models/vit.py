@@ -146,7 +146,7 @@ class Attention(nn.Module):
         out = torch.matmul(attn, v)
         #print(out.shape)
         out = rearrange(out, 'b h n d -> b n (h d)')
-        #print(out.shape, self.heads)
+        print('pre Wo out shape', out.shape)
         return self.to_out(out)
 
 class Transformer(nn.Module):
