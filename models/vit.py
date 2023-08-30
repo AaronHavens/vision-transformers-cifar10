@@ -118,7 +118,7 @@ class Attention(nn.Module):
 
 
         self.to_out = nn.Sequential(
-            nn.Lineaer(inner_dim, dim),
+            nn.Linear(inner_dim, dim),
             nn.Dropout(dropout)
         ) if project_out else nn.Identity()
 
