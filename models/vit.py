@@ -93,7 +93,7 @@ class OrthogonLin(nn.Linear):
         if self.training or self.Q is None:
             for j in range(self.heads):
                 Wj = self.weight[j:j+self.dim_head, :]
-                self.Q[j:j+self.dim_head,:] = cayley(self.alpha * W / W.norm())
+                self.Q[j:j+self.dim_head,:] = cayley(self.alpha * Wj / Wj.norm())
         Q = self.Q if self.training else self.Q.detach()
         y = nn.functional.linear(self.scale * x, Q, self.bias)
         return y
