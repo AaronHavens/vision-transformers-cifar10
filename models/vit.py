@@ -85,15 +85,15 @@ class OrthogonLin(nn.Linear):
         self.alpha = nn.Parameter(torch.ones(1, dtype=torch.float32, requires_grad=True))
         self.alpha.data = self.weight.norm()
         self.scale = scale
-        self.Q = None
+        self.Q = nn.Parameter(torch.ones(out_features, in_features, dtype=torch.float32, requires_grad=True))
         self.heads = heads
         self.dim_head = in_features//heads
         
     def forward(self, x):
         if self.training or self.Q is None:
             for j in range(self.heads):
-                Wj = self.weight[j:j+self.dim_head, :]
-                self.Q[j:j+self.dim_head,:] = cayley(self.alpha * Wj / Wj.norm())
+                Wj = self.weight[:, j:j+self.dim_head]
+                self.Q[:, j:j+self.dim_head] = cayley(self.alpha * Wj / Wj.norm())
         Q = self.Q if self.training else self.Q.detach()
         y = nn.functional.linear(self.scale * x, Q, self.bias)
         return y
