@@ -126,7 +126,7 @@ class Attention(nn.Module):
         # self.to_k = nn.Linear(dim, inner_dim , bias = False)
         # self.to_v = nn.Linear(dim, inner_dim , bias = False)
 
-
+        print('dims of Wo', inner_dim, dim)
         self.to_out = nn.Sequential(
             OrthogonLin(inner_dim, dim, heads=heads),
             nn.Dropout(dropout)
