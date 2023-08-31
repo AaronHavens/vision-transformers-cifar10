@@ -97,7 +97,7 @@ class OrthogonLin(nn.Linear):
             Q_list = []
             print('W shape', self.weight.shape, self.heads)
             for j in range(self.heads):
-                Wj = self.weight[j:j*self.dim_head+self.dim_head,:]
+                Wj = self.weight[j*self.dim_head:j*self.dim_head+self.dim_head,:]
                 print('Wj shape', Wj.shape)
                 Qj = cayley(self.alpha * Wj / Wj.norm())
                 Q_list.append(Qj)
