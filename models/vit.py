@@ -145,7 +145,7 @@ class Attention(nn.Module):
         #print(out.shape)
         out = rearrange(out, 'b h n d -> b n (h d)')
         #print('pre Wo out shape', out.shape)
-        return self.to_out(out)
+        return out#self.to_out(out)
 
 class Transformer(nn.Module):
     def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):
@@ -196,7 +196,7 @@ class ViT(nn.Module):
         self.to_latent = nn.Identity()
 
         self.mlp_head = nn.Sequential(
-            CenterNorm(dim),
+            #CenterNorm(dim),
             #nn.LayerNorm(dim),
             nn.Linear(dim, num_classes)
         )
