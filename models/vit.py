@@ -101,7 +101,7 @@ class OrthogonLin(nn.Linear):
                 #print('Wj shape', Wj.shape)
                 Qj = cayley(self.alpha * Wj / Wj.norm())
                 Q_list.append(Qj)
-            self.Q = torch.vstack(Q_list) # need to put on device i think?
+            self.Q = torch.vstack(Q_list).to(x.device) # need to put on device i think?
         Q = self.Q if self.training else self.Q.detach()
         y = nn.functional.linear(self.scale * x, Q, self.bias)
         return y
