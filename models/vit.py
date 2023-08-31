@@ -85,8 +85,8 @@ def cayley_square(W):
 class OrthogonLin(nn.Linear):
     def __init__(self, in_features, out_features, heads=8, bias=True, scale=1.0):
         super().__init__(in_features, out_features, bias)
-        self.alpha = nn.Parameter(torch.ones(1, dtype=torch.float32, requires_grad=True))
-        self.alpha.data = self.weight.norm()
+        #self.alpha = nn.Parameter(torch.ones(1, dtype=torch.float32, requires_grad=True))
+        #self.alpha.data = self.weight.norm()
         self.scale = scale
         self.Q = None
         self.heads = heads
@@ -99,7 +99,7 @@ class OrthogonLin(nn.Linear):
             for j in range(self.heads):
                 Wj = self.weight[j*self.dim_head:j*self.dim_head+self.dim_head,:]
                 #print('Wj shape', Wj.shape)
-                Qj = cayley(self.alpha * Wj / Wj.norm())
+                Qj = cayley(Wj / Wj.norm())
                 Q_list.append(Qj)
             self.Q = torch.vstack(Q_list) # need to put on device i think?
         Q = self.Q if self.training else self.Q.detach()
@@ -153,8 +153,8 @@ class Transformer(nn.Module):
         self.layers = nn.ModuleList([])
         for _ in range(depth):
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, CenterNorm(dim), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-                PreNorm(dim, CenterNorm(dim), FeedForward(dim, mlp_dim, dropout = dropout))
+                PreNorm(dim, nn.LayerNorm(dim), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+                PreNorm(dim, nn.LayerNorm(dim), FeedForward(dim, mlp_dim, dropout = dropout))
             ]))
             # self.layers.append(nn.ModuleList([
             #     PreProject(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
@@ -195,7 +195,7 @@ class ViT(nn.Module):
         self.to_latent = nn.Identity()
 
         self.mlp_head = nn.Sequential(
-            CenterNorm(dim),
+            nn.LayerNorm(dim),
             nn.Linear(dim, num_classes)
         )
 
