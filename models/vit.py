@@ -152,9 +152,11 @@ class Transformer(nn.Module):
         super().__init__()
         self.layers = nn.ModuleList([])
         id_map = nn.Identity()
-        for _ in range(depth):
+        for j in range(depth):
+            if j==0: norm = CenterNorm(dim)
+            else: norm = nn.Identity()
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, nn.Identity(), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+                PreNorm(dim, norm, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
                 PreNorm(dim, nn.Identity(), FeedForward(dim, mlp_dim, dropout = dropout))
             ]))
             # self.layers.append(nn.ModuleList([
