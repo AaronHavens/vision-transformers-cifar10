@@ -63,8 +63,6 @@ class CenterNorm(nn.Module):
         x = self.weight[None, None, :] * x + self.bias[None, None, :]
         return x.squeeze()
 
-    def __repr__(self):
-        return "CenterNorm()"
 
 # from www.github.com/acfr/LBDN
 def cayley(W):
@@ -99,11 +97,11 @@ class OrthogonLin(nn.Linear):
             Q_list = []
             print('W shape', self.weight.shape, self.heads)
             for j in range(self.heads):
-                Wj = self.weight[:, j:j+self.dim_head]
+                Wj = self.weight[j:j+self.dim_head,:]
                 print('Wj shape', Wj.shape)
                 Qj = cayley_square(self.alpha * Wj / Wj.norm())
                 Q_list.append(Qj)
-            self.Q = torch.hstack(Q_list) # need to put on device i think?
+            self.Q = torch.vstack(Q_list) # need to put on device i think?
         Q = self.Q if self.training else self.Q.detach()
         y = nn.functional.linear(self.scale * x, Q, self.bias)
         return y
@@ -173,7 +171,6 @@ class Transformer(nn.Module):
 class ViT(nn.Module):
     def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.):
         super().__init__()
-        print('patch size', patch_size)
         image_height, image_width = pair(image_size)
         patch_height, patch_width = pair(patch_size)
 
