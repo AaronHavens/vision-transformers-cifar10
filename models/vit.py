@@ -95,10 +95,10 @@ class OrthogonLin(nn.Linear):
     def forward(self, x):
         if self.training or self.Q is None:
             Q_list = []
-            print('W shape', self.weight.shape, self.heads)
+            #print('W shape', self.weight.shape, self.heads)
             for j in range(self.heads):
                 Wj = self.weight[j*self.dim_head:j*self.dim_head+self.dim_head,:]
-                print('Wj shape', Wj.shape)
+                #print('Wj shape', Wj.shape)
                 Qj = cayley(self.alpha * Wj / Wj.norm())
                 Q_list.append(Qj)
             self.Q = torch.vstack(Q_list) # need to put on device i think?
@@ -124,7 +124,7 @@ class Attention(nn.Module):
         # self.to_k = nn.Linear(dim, inner_dim , bias = False)
         # self.to_v = nn.Linear(dim, inner_dim , bias = False)
 
-        print('dims of Wo', inner_dim, dim)
+        #print('dims of Wo', inner_dim, dim)
         self.to_out = nn.Sequential(
             OrthogonLin(inner_dim, dim, heads=heads),
             nn.Dropout(dropout)
@@ -144,7 +144,7 @@ class Attention(nn.Module):
         out = torch.matmul(attn, v)
         #print(out.shape)
         out = rearrange(out, 'b h n d -> b n (h d)')
-        print('pre Wo out shape', out.shape)
+        #print('pre Wo out shape', out.shape)
         return self.to_out(out)
 
 class Transformer(nn.Module):
