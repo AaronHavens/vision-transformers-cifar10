@@ -103,7 +103,7 @@ class SDPLin(nn.Module):
         self.W = torch.vstack(W_list)
     W = self.W if self.training else self.W.detach()
 
-    out =  F.linear(y, W, self.bias)
+    out =  nn.functional.linear(y, W, self.bias)
     return out
 
 
