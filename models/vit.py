@@ -85,7 +85,7 @@ class SDPLin(nn.Module):
         bound = 1 / np.sqrt(fan_in)
         nn.init.uniform_(self.bias, -bound, bound)
     else: self.bias = None
-    self.q = nn.Parameter(torch.rand(cin*self.heads))
+    self.q = nn.Parameter(torch.rand(cin*heads))
 
     self.heads = heads
     self.dim_head = cout//heads
