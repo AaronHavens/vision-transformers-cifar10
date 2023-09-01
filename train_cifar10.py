@@ -74,12 +74,12 @@ best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 # Data
-# print('==> Preparing data..')
-# if args.net=="vit_timm":
-#     size = 384
-# else:
-#     size = imsize
-# args.size = size
+print('==> Preparing data..')
+if args.net=="vit_timm":
+    size = 384
+else:
+    size = imsize
+args.size = size
 # transform_train = transforms.Compose([
 #     transforms.RandomCrop(32, padding=4),
 #     transforms.Resize(size),
