@@ -64,6 +64,46 @@ class CenterNorm(nn.Module):
         return x.squeeze()
 
 
+def SLL_weight(W, q_param):
+    q_ = q_param[:, None]
+    q = torch.exp(q_)
+    q_inv = torch.exp(-q_)
+    T = 1/torch.abs(q_inv * W.T @ W * q).sum(1)
+    return W@torch.diag(torch.sqrt(T))
+
+class SDPLin(nn.Module):
+
+  def __init__(self, cin, cout, heads=8, epsilon=1e-6):
+    super(SDPLin, self).__init__()
+
+    self.weight = nn.Parameter(torch.empty(cout, cin))
+    self.bias = nn.Parameter(torch.empty(cout))
+    self.q = nn.Parameter(torch.rand(cin))
+    nn.init.xavier_normal_(self.weights)
+    fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.weight)
+    bound = 1 / np.sqrt(fan_in)
+    nn.init.uniform_(self.bias, -bound, bound)
+    self.heads = heads
+    self.dim_head = cin//heads
+    self.W = None
+    #self.epsilon = epsilon
+
+  def forward(self, x):
+    if self.training or self.W is None:
+        W_list = []
+        for j in range(self.heads):
+            Qj = self.weight[j*self.dim_head:j*self.dim_head+self.dim_head,:]
+            qj = self.q[j*self.dim_head:j*self.dim_head+self.dim_head]
+            Wj = SLL_weight(Wj, qj)
+            W_list.append(Qj)
+        self.W = torch.vstack(W_list)
+    W = self.W if self.training else self.W.detach()
+
+    out =  F.linear(y, W, self.bias)
+    return out
+
+
+
 # from www.github.com/acfr/LBDN
 def cayley(W):
     if len(W.shape) == 2:
@@ -95,13 +135,13 @@ class OrthogonLin(nn.Linear):
     def forward(self, x):
         if self.training or self.Q is None:
             Q_list = []
-            #print('W shape', self.weight.shape, self.heads)
+            #This is probably very inefficient
             for j in range(self.heads):
                 Wj = self.weight[j*self.dim_head:j*self.dim_head+self.dim_head,:]
                 #print('Wj shape', Wj.shape)
                 Qj = cayley(self.alpha * Wj / Wj.norm())
                 Q_list.append(Qj)
-            self.Q = torch.vstack(Q_list).to(x.device) # need to put on device i think?
+            self.Q = torch.vstack(Q_list)
         Q = self.Q if self.training else self.Q.detach()
         y = nn.functional.linear(self.scale * x, Q, self.bias)
         return y
@@ -117,17 +157,17 @@ class Attention(nn.Module):
 
         self.attend = nn.Softmax(dim = -1)
         #self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-        # self.to_q = OrthogonLin(dim, inner_dim, heads=heads, bias=False)
-        # self.to_k = OrthogonLin(dim, inner_dim, heads=heads, bias=False)
-        # self.to_v = OrthogonLin(dim, inner_dim, heads=heads, bias=False)
-        self.to_q = nn.Linear(dim, inner_dim , bias = False)
-        self.to_k = nn.Linear(dim, inner_dim , bias = False)
-        self.to_v = nn.Linear(dim, inner_dim , bias = False)
+        # self.to_q = SDPLin(dim, inner_dim, heads=heads, bias=False)
+        # self.to_k = SDPLin(dim, inner_dim, heads=heads, bias=False)
+        # self.to_v = SDPLin(dim, inner_dim, heads=heads, bias=False)
+        # self.to_q = nn.Linear(dim, inner_dim , bias = False)
+        # self.to_k = nn.Linear(dim, inner_dim , bias = False)
+        # self.to_v = nn.Linear(dim, inner_dim , bias = False)
 
         #print('dims of Wo', inner_dim, dim)
         self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
-            #OrthogonLin(inner_dim, dim, heads=heads),
+            #nn.Linear(inner_dim, dim),
+            SDPLin(inner_dim, dim, heads=heads),
             nn.Dropout(dropout)
         ) if project_out else nn.Identity()
 
