@@ -68,6 +68,7 @@ def SLL_weight(W, q_param):
     q_ = q_param[:, None]
     q = torch.exp(q_)
     q_inv = torch.exp(-q_)
+    print(W.shape, q.shape)
     T = 1/torch.abs(q_inv * W.T @ W * q).sum(1)
     return W@torch.diag(torch.sqrt(T))
 
