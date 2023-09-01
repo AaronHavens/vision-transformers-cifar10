@@ -129,6 +129,7 @@ def cayley_square(W):
 class OrthogonLin(nn.Linear):
     def __init__(self, in_features, out_features, heads=8, bias=True, scale=1.0):
         super().__init__(in_features, out_features, bias)
+        print(self.weight.shape, in_features, out_features)
         self.alpha = nn.Parameter(torch.ones(1, dtype=torch.float32, requires_grad=True))
         self.alpha.data = self.weight.norm()
         self.scale = scale
@@ -161,7 +162,7 @@ class Attention(nn.Module):
 
         self.attend = nn.Softmax(dim = -1)
         #self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-        self.to_q = SDPLin(dim, inner_dim, heads=heads, bias=False)
+        self.to_q = OrthogonLin(dim, inner_dim, heads=heads, bias=False)
         self.to_k = SDPLin(dim, inner_dim, heads=heads, bias=False)
         self.to_v = SDPLin(dim, inner_dim, heads=heads, bias=False)
         # self.to_q = nn.Linear(dim, inner_dim , bias = False)
