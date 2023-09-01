@@ -88,7 +88,7 @@ class SDPLin(nn.Module):
     self.q = nn.Parameter(torch.rand(cin))
 
     self.heads = heads
-    self.dim_head = cin//heads
+    self.dim_head = cout//heads
     self.W = None
     #self.epsilon = epsilon
 
