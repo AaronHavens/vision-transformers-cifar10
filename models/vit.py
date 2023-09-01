@@ -96,7 +96,7 @@ class SDPLin(nn.Module):
     if self.training or self.W is None:
         W_list = []
         for j in range(self.heads):
-            Qj = self.weight[:,j*self.dim_head:j*self.dim_head+self.dim_head]
+            Qj = self.weight[j*self.dim_head:j*self.dim_head+self.dim_head, :]
             qj = self.q[j*self.dim_head:j*self.dim_head+self.dim_head]
             Wj = SLL_weight(Qj, qj)
             W_list.append(Wj)
@@ -162,7 +162,7 @@ class Attention(nn.Module):
 
         self.attend = nn.Softmax(dim = -1)
         #self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-        self.to_q = OrthogonLin(dim, inner_dim, heads=heads, bias=False)
+        self.to_q = SDPLin(dim, inner_dim, heads=heads, bias=False)
         self.to_k = SDPLin(dim, inner_dim, heads=heads, bias=False)
         self.to_v = SDPLin(dim, inner_dim, heads=heads, bias=False)
         # self.to_q = nn.Linear(dim, inner_dim , bias = False)
