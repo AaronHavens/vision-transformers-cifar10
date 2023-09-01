@@ -97,8 +97,8 @@ class SDPLin(nn.Module):
         for j in range(self.heads):
             Qj = self.weight[j*self.dim_head:j*self.dim_head+self.dim_head,:]
             qj = self.q[j*self.dim_head:j*self.dim_head+self.dim_head]
-            Wj = SLL_weight(Wj, qj)
-            W_list.append(Qj)
+            Wj = SLL_weight(Qj, qj)
+            W_list.append(Wj)
         self.W = torch.vstack(W_list)
     W = self.W if self.training else self.W.detach()
 
