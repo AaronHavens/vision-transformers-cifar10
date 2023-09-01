@@ -77,7 +77,7 @@ class SDPLin(nn.Module):
     super(SDPLin, self).__init__()
 
     self.weight = nn.Parameter(torch.empty(cout, cin))
-    nn.init.xavier_normal_(self.weights)
+    nn.init.xavier_normal_(self.weight)
     if bias:
         self.bias = nn.Parameter(torch.empty(cout))
         fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.weight)
