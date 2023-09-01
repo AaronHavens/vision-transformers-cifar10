@@ -73,16 +73,19 @@ def SLL_weight(W, q_param):
 
 class SDPLin(nn.Module):
 
-  def __init__(self, cin, cout, heads=8, epsilon=1e-6):
+  def __init__(self, cin, cout, heads=8, epsilon=1e-6, bias=True):
     super(SDPLin, self).__init__()
 
     self.weight = nn.Parameter(torch.empty(cout, cin))
-    self.bias = nn.Parameter(torch.empty(cout))
-    self.q = nn.Parameter(torch.rand(cin))
     nn.init.xavier_normal_(self.weights)
-    fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.weight)
-    bound = 1 / np.sqrt(fan_in)
-    nn.init.uniform_(self.bias, -bound, bound)
+    if bias:
+        self.bias = nn.Parameter(torch.empty(cout))
+        fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.weight)
+        bound = 1 / np.sqrt(fan_in)
+        nn.init.uniform_(self.bias, -bound, bound)
+    else: self.bias = None
+    self.q = nn.Parameter(torch.rand(cin))
+
     self.heads = heads
     self.dim_head = cin//heads
     self.W = None
