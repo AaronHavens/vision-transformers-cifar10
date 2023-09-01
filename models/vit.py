@@ -5,7 +5,7 @@ from torch import nn
 
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
-
+import numpy as np
 # helpers
 
 def pair(t):
