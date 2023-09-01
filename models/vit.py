@@ -117,16 +117,17 @@ class Attention(nn.Module):
 
         self.attend = nn.Softmax(dim = -1)
         #self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-        self.to_q = OrthogonLin(dim, inner_dim, heads=heads, bias=False)
-        self.to_k = OrthogonLin(dim, inner_dim, heads=heads, bias=False)
-        self.to_v = OrthogonLin(dim, inner_dim, heads=heads, bias=False)
-        # self.to_q = nn.Linear(dim, inner_dim , bias = False)
-        # self.to_k = nn.Linear(dim, inner_dim , bias = False)
-        # self.to_v = nn.Linear(dim, inner_dim , bias = False)
+        # self.to_q = OrthogonLin(dim, inner_dim, heads=heads, bias=False)
+        # self.to_k = OrthogonLin(dim, inner_dim, heads=heads, bias=False)
+        # self.to_v = OrthogonLin(dim, inner_dim, heads=heads, bias=False)
+        self.to_q = nn.Linear(dim, inner_dim , bias = False)
+        self.to_k = nn.Linear(dim, inner_dim , bias = False)
+        self.to_v = nn.Linear(dim, inner_dim , bias = False)
 
         #print('dims of Wo', inner_dim, dim)
         self.to_out = nn.Sequential(
-            OrthogonLin(inner_dim, dim, heads=heads),
+            nn.Linear(inner_dim, dim),
+            #OrthogonLin(inner_dim, dim, heads=heads),
             nn.Dropout(dropout)
         ) if project_out else nn.Identity()
 
