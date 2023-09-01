@@ -200,11 +200,11 @@ class Transformer(nn.Module):
         self.layers = nn.ModuleList([])
         id_map = nn.Identity()
         for j in range(depth):
-            if j==0: norm = CenterNorm(dim)
-            else: norm = nn.Identity()
+            #if j==0: norm = CenterNorm(dim)
+            #else: norm = nn.Identity()
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, norm, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-                PreNorm(dim, nn.Identity(), FeedForward(dim, mlp_dim, dropout = dropout))
+                PreNorm(dim, CenterNorm(dim), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+                PreNorm(dim, CenterNorm(dim), FeedForward(dim, mlp_dim, dropout = dropout))
             ]))
             # self.layers.append(nn.ModuleList([
             #     PreProject(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
@@ -245,7 +245,7 @@ class ViT(nn.Module):
         self.to_latent = nn.Identity()
 
         self.mlp_head = nn.Sequential(
-            #CenterNorm(dim),
+            CenterNorm(dim),
             #nn.LayerNorm(dim),
             nn.Linear(dim, num_classes)
         )
