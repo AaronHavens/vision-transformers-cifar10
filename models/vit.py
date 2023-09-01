@@ -68,7 +68,7 @@ def SLL_weight(W, q_param):
     q_ = q_param[:, None]
     q = torch.exp(q_)
     q_inv = torch.exp(-q_)
-    print(W.shape, q.shape)
+    #print(W.shape, q.shape)
     T = 1/torch.abs(q_inv * W.T @ W * q).sum(1)
     return W@torch.diag(torch.sqrt(T))
 
@@ -96,7 +96,7 @@ class SDPLin(nn.Module):
     if self.training or self.W is None:
         W_list = []
         for j in range(self.heads):
-            Qj = self.weight[j*self.dim_head:j*self.dim_head+self.dim_head,:]
+            Qj = self.weight[:,j*self.dim_head:j*self.dim_head+self.dim_head]
             qj = self.q[j*self.dim_head:j*self.dim_head+self.dim_head]
             Wj = SLL_weight(Qj, qj)
             W_list.append(Wj)
