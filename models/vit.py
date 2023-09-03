@@ -25,13 +25,13 @@ class PreNorm(nn.Module):
 class FeedForward(nn.Module):
     def __init__(self, dim, hidden_dim, dropout = 0.):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(dim, hidden_dim),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, dim),
-            nn.Dropout(dropout)
-        )        
+        # self.net = nn.Sequential(
+        #     nn.Linear(dim, hidden_dim),
+        #     nn.GELU(),
+        #     nn.Dropout(dropout),
+        #     nn.Linear(hidden_dim, dim),
+        #     nn.Dropout(dropout)
+        # )        
         self.net = nn.Sequential(
             SDPLin(dim, hidden_dim),
             nn.GELU(),
@@ -39,13 +39,7 @@ class FeedForward(nn.Module):
             SDPLin(hidden_dim, dim),
             nn.Dropout(dropout)
         )
-                self.net = nn.Sequential(
-            nn.Linear(dim, hidden_dim),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, dim),
-            nn.Dropout(dropout)
-        )
+
     def forward(self, x):
         return self.net(x)
 
