@@ -31,6 +31,20 @@ class FeedForward(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(hidden_dim, dim),
             nn.Dropout(dropout)
+        )        
+        self.net = nn.Sequential(
+            SDPLin(dim, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            SDPLin(hidden_dim, dim),
+            nn.Dropout(dropout)
+        )
+                self.net = nn.Sequential(
+            nn.Linear(dim, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, dim),
+            nn.Dropout(dropout)
         )
     def forward(self, x):
         return self.net(x)
@@ -74,7 +88,7 @@ def SLL_weight(W, q_param):
 
 class SDPLin(nn.Module):
 
-  def __init__(self, cin, cout, heads=8, epsilon=1e-6, bias=True):
+  def __init__(self, cin, cout, heads=1, epsilon=1e-6, bias=True):
     super(SDPLin, self).__init__()
 
     self.weight = nn.Parameter(torch.empty(cout, cin))
@@ -178,9 +192,7 @@ class Attention(nn.Module):
         ) if project_out else nn.Identity()
 
     def forward(self, x):
-        #print(x.shape)
         #qkv = self.to_qkv(x).chunk(3, dim = -1)
-        print(x.shape)
         q_ = self.to_q(x)
         k_ = self.to_k(x)
         v_ = self.to_v(x)
@@ -201,16 +213,10 @@ class Transformer(nn.Module):
         self.layers = nn.ModuleList([])
         id_map = nn.Identity()
         for j in range(depth):
-            #if j==0: norm = CenterNorm(dim)
-            #else: norm = nn.Identity()
             self.layers.append(nn.ModuleList([
                 PreNorm(dim, CenterNorm(dim), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
                 PreNorm(dim, CenterNorm(dim), FeedForward(dim, mlp_dim, dropout = dropout))
             ]))
-            # self.layers.append(nn.ModuleList([
-            #     PreProject(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-            #     PreProject(dim, FeedForward(dim, mlp_dim, dropout = dropout))
-            # ]))
 
 
     def forward(self, x):
@@ -248,7 +254,7 @@ class ViT(nn.Module):
         self.mlp_head = nn.Sequential(
             CenterNorm(dim),
             #nn.LayerNorm(dim),
-            nn.Linear(dim, num_classes)
+            SDPLin(dim, num_classes)
         )
 
     def forward(self, img):
