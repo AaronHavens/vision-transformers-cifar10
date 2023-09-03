@@ -180,6 +180,7 @@ class Attention(nn.Module):
     def forward(self, x):
         #print(x.shape)
         #qkv = self.to_qkv(x).chunk(3, dim = -1)
+        print(x.shape)
         q_ = self.to_q(x)
         k_ = self.to_k(x)
         v_ = self.to_v(x)
