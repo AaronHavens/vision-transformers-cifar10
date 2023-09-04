@@ -110,7 +110,7 @@ class SDPLin(nn.Module):
         q_ = self.q[:,:,None]
         q = torch.exp(q_)
         q_inv = torch.exp(-q_)
-        T = 1/torch.abs(q_inv*torch.transpose(W,1,2)@W*q).sum(2)
+        T = 1/torch.abs(q_inv*torch.transpose(self.weight,1,2)@self.weight*q).sum(2)
         W = (self.weight@torch.diag_embed(torch.sqrt(T))).view(self.cout, self.cin)
 
     W = self.W if self.training else self.W.detach()
