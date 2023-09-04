@@ -176,17 +176,14 @@ class Attention(nn.Module):
         #self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
         self.to_q = SDPLin(dim, inner_dim, heads=heads, bias=False)
         self.to_k = SDPLin(dim, inner_dim, heads=heads, bias=False)
-        self.to_v = SDPLin(dim, inner_dim, heads=1, bias=False)
+        #self.to_v = SDPLin(dim, inner_dim, heads=1, bias=False)
         # self.to_q = nn.Linear(dim, inner_dim , bias = False)
         # self.to_k = nn.Linear(dim, inner_dim , bias = False)
-        # self.to_v = nn.Linear(dim, inner_dim , bias = False)
+        self.to_v = nn.Identity()
 
         #print('dims of Wo', inner_dim, dim)
-        self.to_out = nn.Sequential(
-            #nn.Linear(inner_dim, dim),
-            SDPLin(inner_dim, dim, heads=heads),
-            nn.Dropout(dropout)
-        ) if project_out else nn.Identity()
+        self.to_out = SDPLin(inner_dim, dim, heads=1)
+        #) if project_out else nn.Identity()
 
     def forward(self, x):
         #qkv = self.to_qkv(x).chunk(3, dim = -1)
@@ -202,7 +199,7 @@ class Attention(nn.Module):
         #print(out.shape)
         out = rearrange(out, 'b h n d -> b n (h d)')
         #print('pre Wo out shape', out.shape)
-        return out#self.to_out(out)
+        return self.to_out(out)
 
 class Transformer(nn.Module):
     def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):
