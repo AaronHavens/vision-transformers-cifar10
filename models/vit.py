@@ -31,7 +31,8 @@ class FeedForward(nn.Module):
         #     nn.Dropout(dropout),
         #     nn.Linear(hidden_dim, dim),
         #     nn.Dropout(dropout)
-        # )        
+        # )
+        # remove dropout, may be not needed
         self.net = nn.Sequential(
             SDPLin(dim, hidden_dim),
             nn.GELU(),
@@ -72,20 +73,22 @@ class CenterNorm(nn.Module):
         return x.squeeze()
 
 
-def SLL_weight(W, q_param):
-    q_ = q_param[:, None]
-    q = torch.exp(q_)
-    q_inv = torch.exp(-q_)
-    #print(W.shape, q.shape)
-    T = 1/torch.abs(q_inv * W.T @ W * q).sum(1)
-    return W@torch.diag(torch.sqrt(T))
+# def SLL_weight(W, q_param):
+#     q_ = q_param[:, None]
+#     q = torch.exp(q_)
+#     q_inv = torch.exp(-q_)
+#     #print(W.shape, q.shape)
+#     T = 1/torch.abs(q_inv * W.T @ W * q).sum(1)
+#     return W@torch.diag(torch.sqrt(T))
 
 class SDPLin(nn.Module):
 
   def __init__(self, cin, cout, heads=1, epsilon=1e-6, bias=True):
     super(SDPLin, self).__init__()
 
-    self.weight = nn.Parameter(torch.empty(cout, cin))
+    self.heads = heads
+    self.dim_head = cout//heads
+    self.weight = nn.Parameter(torch.empty(h, self.dim_head, cin))
     nn.init.xavier_normal_(self.weight)
     if bias:
         self.bias = nn.Parameter(torch.empty(cout))
@@ -93,23 +96,24 @@ class SDPLin(nn.Module):
         bound = 1 / np.sqrt(fan_in)
         nn.init.uniform_(self.bias, -bound, bound)
     else: self.bias = None
-    self.q = nn.Parameter(torch.rand(cin*heads))
+    self.q = nn.Parameter(torch.rand(h, cin))
 
-    self.heads = heads
-    self.dim_head = cout//heads
+    self.cout = cout
     self.cin = cin
     self.W = None
     #self.epsilon = epsilon
 
+#vectorize this operation
   def forward(self, x):
     if self.training or self.W is None:
-        W_list = []
-        for j in range(self.heads):
-            Qj = self.weight[j*self.dim_head:j*self.dim_head+self.dim_head, :]
-            qj = self.q[j*self.cin:j*self.cin+self.cin]
-            Wj = SLL_weight(Qj, qj)
-            W_list.append(Wj)
-        self.W = torch.vstack(W_list)
+        
+        #self.W = SLL_weight(self.weight, self.q).reshape(self.cout, self.cin)
+        q_ = self.q[:,:,None]
+        q = torch.exp(q_)
+        q_inv = torch.exp(-q_)
+        T = 1/torch.abs(q_inv*torch.transpose(W,1,2)@W*q).sum(2)
+        W = (self.weight@torch.diag_embed(torch.sqrt(T))).view(self.cout, self.cin)
+
     W = self.W if self.training else self.W.detach()
 
     out =  nn.functional.linear(x, W, self.bias)
@@ -173,7 +177,7 @@ class Attention(nn.Module):
         #self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
         self.to_q = SDPLin(dim, inner_dim, heads=heads, bias=False)
         self.to_k = SDPLin(dim, inner_dim, heads=heads, bias=False)
-        self.to_v = SDPLin(dim, inner_dim, heads=heads, bias=False)
+        self.to_v = SDPLin(dim, inner_dim, heads=1, bias=False)
         # self.to_q = nn.Linear(dim, inner_dim , bias = False)
         # self.to_k = nn.Linear(dim, inner_dim , bias = False)
         # self.to_v = nn.Linear(dim, inner_dim , bias = False)
@@ -238,6 +242,7 @@ class ViT(nn.Module):
 
         self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
         self.cls_token = nn.Parameter(torch.randn(1, 1, dim))
+        #try without dropout, may be not needed
         self.dropout = nn.Dropout(emb_dropout)
 
         self.transformer = Transformer(dim, depth, heads, dim_head, mlp_dim, dropout)
