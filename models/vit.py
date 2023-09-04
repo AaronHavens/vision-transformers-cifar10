@@ -86,9 +86,8 @@ class SDPLin(nn.Module):
   def __init__(self, cin, cout, heads=1, epsilon=1e-6, bias=True):
     super(SDPLin, self).__init__()
 
-    self.heads = heads
     self.dim_head = cout//heads
-    self.weight = nn.Parameter(torch.empty(h, self.dim_head, cin))
+    self.weight = nn.Parameter(torch.empty(heads, self.dim_head, cin))
     nn.init.xavier_normal_(self.weight)
     if bias:
         self.bias = nn.Parameter(torch.empty(cout))
@@ -96,7 +95,7 @@ class SDPLin(nn.Module):
         bound = 1 / np.sqrt(fan_in)
         nn.init.uniform_(self.bias, -bound, bound)
     else: self.bias = None
-    self.q = nn.Parameter(torch.rand(h, cin))
+    self.q = nn.Parameter(torch.rand(heads, cin))
 
     self.cout = cout
     self.cin = cin
