@@ -99,7 +99,7 @@ class SLLRes(nn.Module):
     self.epsilon = epsilon
 
   def forward(self, x):
-    res = F.linear(x, self.weights, self.bias)
+    res = nn.functional.linear(x, self.weights, self.bias)
     res = self.activation(res)
     #q_abs = torch.exp(self.q)
     q_ = self.q[None, :]
