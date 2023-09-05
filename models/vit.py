@@ -81,6 +81,36 @@ class CenterNorm(nn.Module):
 #     T = 1/torch.abs(q_inv * W.T @ W * q).sum(1)
 #     return W@torch.diag(torch.sqrt(T))
 
+class SLLRes(nn.Module):
+
+  def __init__(self, cin, cout, epsilon=1e-6):
+    super(SLLRes, self).__init__()
+
+    self.activation = nn.ReLU(inplace=False)
+    self.weights = nn.Parameter(torch.empty(cout, cin))
+    self.bias = nn.Parameter(torch.empty(cout))
+    self.q = nn.Parameter(torch.rand(cout))
+
+    nn.init.xavier_normal_(self.weights)
+    fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.weights)
+    bound = 1 / np.sqrt(fan_in)
+    nn.init.uniform_(self.bias, -bound, bound)  # bias init
+
+    self.epsilon = epsilon
+
+  def forward(self, x):
+    res = F.linear(x, self.weights, self.bias)
+    res = self.activation(res)
+    #q_abs = torch.exp(self.q)
+    q_ = self.q[None, :]
+    q = torch.exp(q_)
+    q_inv = torch.exp(-q_)#(1/(q_abs+self.epsilon))[:, None]
+    T = 2/torch.abs(q_inv * self.weights @ self.weights.T * q).sum(1)
+    res = T * res
+    res = nn.functional.linear(res, self.weights.t())
+    out = x - res
+    return out
+
 class SDPLin(nn.Module):
 
   def __init__(self, cin, cout, heads=1, epsilon=1e-6, bias=True):
@@ -209,14 +239,14 @@ class Transformer(nn.Module):
         for j in range(depth):
             self.layers.append(nn.ModuleList([
                 PreNorm(dim, CenterNorm(dim), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-                PreNorm(dim, CenterNorm(dim), FeedForward(dim, mlp_dim, dropout = dropout))
+                PreNorm(dim, CenterNorm(dim), SLLRes(dim, mlp_dim))
             ]))
 
 
     def forward(self, x):
         for attn, ff in self.layers:
             x = attn(x) + x
-            x = ff(x) + x
+            x = ff(x)
         return x
 
 class ViT(nn.Module):
@@ -233,7 +263,7 @@ class ViT(nn.Module):
 
         self.to_patch_embedding = nn.Sequential(
             Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
-            nn.Linear(patch_dim, dim),
+            nn.SDPLin(patch_dim, dim),
         )
 
         self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
