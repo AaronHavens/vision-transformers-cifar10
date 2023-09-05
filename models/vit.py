@@ -113,7 +113,7 @@ class SLLRes(nn.Module):
 
 class SDPLin(nn.Module):
 
-  def __init__(self, cin, cout, heads=1, epsilon=1e-6, bias=True):
+  def __init__(self, cin, cout, heads=1, gamma=1.0, epsilon=1e-6, bias=True):
     super(SDPLin, self).__init__()
 
     self.dim_head = cout//heads
@@ -130,6 +130,7 @@ class SDPLin(nn.Module):
     self.cout = cout
     self.cin = cin
     self.W = None
+    self.gamma = torch.tensor([gamma])
     #self.epsilon = epsilon
 
 #vectorize this operation
@@ -140,7 +141,7 @@ class SDPLin(nn.Module):
         q_ = self.q[:,:,None]
         q = torch.exp(q_)
         q_inv = torch.exp(-q_)
-        T = 1/torch.abs(q_inv*torch.transpose(self.weight,1,2)@self.weight*q).sum(2)
+        T = 1/torch.abs(q_inv*torch.transpose(self.weight,1,2)@self.weight*q/self.gamma**2).sum(2)
         self.W = (self.weight@torch.diag_embed(torch.sqrt(T))).view(self.cout, self.cin)
 
     W = self.W if self.training else self.W.detach()
@@ -206,13 +207,13 @@ class Attention(nn.Module):
         #self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
         self.to_q = SDPLin(dim, inner_dim, heads=heads, bias=False)
         self.to_k = SDPLin(dim, inner_dim, heads=heads, bias=False)
-        #self.to_v = SDPLin(dim, inner_dim, heads=1, bias=False)
+        self.to_v = SDPLin(dim, inner_dim, heads=heads, bias=False)
         # self.to_q = nn.Linear(dim, inner_dim , bias = False)
         # self.to_k = nn.Linear(dim, inner_dim , bias = False)
-        self.to_v = nn.Identity()
+        #self.to_v = nn.Identity()
 
         #print('dims of Wo', inner_dim, dim)
-        self.to_out = SDPLin(inner_dim, dim, heads=1)
+        self.to_out = SDPLin(inner_dim, dim, gamma=1/heads, heads=1)
         #) if project_out else nn.Identity()
 
     def forward(self, x):
