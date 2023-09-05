@@ -130,7 +130,7 @@ class SDPLin(nn.Module):
     self.cout = cout
     self.cin = cin
     self.W = None
-    self.gamma = torch.tensor([gamma])
+    self.gamma = torch.tensor([gamma]).to(self.weight.device)
     #self.epsilon = epsilon
 
 #vectorize this operation
