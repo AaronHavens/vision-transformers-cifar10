@@ -184,8 +184,8 @@ elif args.net=="vit":
     depth = 6,
     heads = 8,
     mlp_dim = 512,
-    dropout = 0.1,
-    emb_dropout = 0.1
+    dropout = 0.0,
+    emb_dropout = 0.0
 )
 elif args.net=="vit_timm":
     import timm
@@ -251,10 +251,12 @@ if args.opt == "adam":
 elif args.opt == "sgd":
     optimizer = optim.SGD(net.parameters(), lr=args.lr)  
     
-# use cosine scheduling
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.n_epochs//5)
+# use cosine scheduling, use warmup period, increment on steps rather than epochs
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.n_epochs)
 
 ##### Training
+
+# consider not using amp. Not reccomended for small networks
 scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
 def train(epoch):
     print('\nEpoch: %d' % epoch)
