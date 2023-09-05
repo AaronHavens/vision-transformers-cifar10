@@ -182,7 +182,7 @@ elif args.net=="vit":
     num_classes = 10,
     dim = int(args.dimhead),
     depth = 6,
-    heads = 8,
+    heads = 4,
     mlp_dim = 512,
     dropout = 0.0,
     emb_dropout = 0.0
