@@ -246,7 +246,7 @@ class Transformer(nn.Module):
 
     def forward(self, x):
         for attn, ff in self.layers:
-            x = attn(x) + x
+            x = attn(x)
             x = ff(x)
         return x
 
