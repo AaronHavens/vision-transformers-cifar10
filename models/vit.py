@@ -213,7 +213,7 @@ class Attention(nn.Module):
         #self.to_v = nn.Identity()
 
         #print('dims of Wo', inner_dim, dim)
-        self.to_out = SDPLin(inner_dim, dim, gamma=1/heads, heads=1)
+        self.to_out = SDPLin(inner_dim, dim, heads=1)
         #) if project_out else nn.Identity()
 
     def forward(self, x):
