@@ -55,6 +55,7 @@ class LayerProject(nn.Module):
         norm_x = torch.linalg.vector_norm(x, ord=self.p, dim=1).unsqueeze(1)
         mask = (norm_x < self.radius).to(x.device).float()
         x = mask * x + (1 - mask) * x / norm_x
+        print(x.shape)
         return x
     def __repr__(self):
         return "LayerProject"
@@ -63,7 +64,7 @@ class CenterNorm(nn.Module):
 
     def __init__(self, normalized_shape):
         super().__init__()
-        self.weight = nn.Parameter(torch.ones(normalized_shape))
+        self.weight = nn.Parameter(torch.ones(normalized_shape), requires_grad=False)
         self.bias = nn.Parameter(torch.zeros(normalized_shape))
         self.scale = normalized_shape/(normalized_shape-1.0)
     def forward(self, x):
