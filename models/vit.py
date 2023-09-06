@@ -68,12 +68,12 @@ class CenterNorm(nn.Module):
     def __init__(self, normalized_shape):
         super().__init__()
         self.weight = nn.Parameter(torch.ones(normalized_shape), requires_grad=False)
-        self.bias = nn.Parameter(torch.zeros(normalized_shape))
+        #self.bias = nn.Parameter(torch.zeros(normalized_shape))
         self.scale = normalized_shape/(normalized_shape-1.0)
     def forward(self, x):
         u = x.mean(-1, keepdim=True)
         x = self.scale*(x - u)
-        x = self.weight[None, None, :] * x + self.bias[None, None, :]
+        x = self.weight[None, None, :] * x #+ self.bias[None, None, :]
         return x.squeeze()
 
 
