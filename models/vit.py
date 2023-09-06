@@ -46,16 +46,19 @@ class FeedForward(nn.Module):
 
 
 class LayerProject(nn.Module):
-    def __init__(self, p=2, radius=1.0):
+    def __init__(self, p='fro', radius=1.0, vector=False):
         super().__init__()
         self.radius = radius
         self.p = p
-
+        self.vector = vector
     def forward(self, x):
-        norm_x = torch.linalg.vector_norm(x, ord=self.p, dim=1).unsqueeze(1)
+        if vector:
+            norm_x = torch.linalg.vector_norm(x, ord=self.p, dim=-1).unsqueeze(1)
+        else:
+            norm_x = torch.norm(x, p=self.p, dim=(-2,-1)).unsqueeze(1).unsqueeze(1)
         mask = (norm_x < self.radius).to(x.device).float()
         x = mask * x + (1 - mask) * x / norm_x
-        print(x.shape)
+        
         return x
     def __repr__(self):
         return "LayerProject"
@@ -314,7 +317,7 @@ class ViT(nn.Module):
         self.to_latent = nn.Identity()
 
         self.mlp_head = nn.Sequential(
-            LayerProject(dim),
+            LayerProject(p=2, vector=True),
             #nn.LayerNorm(dim),
             SDPLin(dim, num_classes)
         )
