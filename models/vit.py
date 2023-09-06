@@ -169,6 +169,36 @@ def cayley_square(W):
     I = torch.eye(W.shape[0]).to(W.device)
     return 2*torch.inverse(I+S) - I
 
+class SDPConv(nn.Module):
+
+  def __init__(self, input_size, cin, cout, kernel_size=3, epsilon=1e-6):
+    super(SDPConv, self).__init__()
+
+    self.activation = nn.ReLU(inplace=False)
+
+    self.kernel = nn.Parameter(torch.empty(cout, cin, kernel_size, kernel_size))
+    self.bias = nn.Parameter(torch.empty(cout))
+    self.q = nn.Parameter(torch.randn(cout))
+
+    nn.init.xavier_normal_(self.kernel)
+    fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.kernel)
+    bound = 1 / np.sqrt(fan_in)
+    nn.init.uniform_(self.bias, -bound, bound) # bias init
+
+    self.epsilon = epsilon
+
+  def forward(self, x):
+    res = F.conv2d(x, self.kernel, bias=self.bias, padding=1)
+    res = self.activation(res)
+    batch_size, cout, x_size, x_size = res.shape
+    kkt = F.conv2d(self.kernel, self.kernel, padding=self.kernel.shape[-1] - 1)
+    q_abs = torch.abs(self.q)
+    T = 2 / (torch.abs(q_abs[None, :, None, None] * kkt).sum((1, 2, 3)) / q_abs)
+    res = T[None, :, None, None] * res
+    res = F.conv_transpose2d(res, self.kernel, padding=1)
+    out = x - res
+    return out  
+
 class OrthogonLin(nn.Linear):
     def __init__(self, in_features, out_features, heads=8, bias=True, scale=1.0):
         super().__init__(in_features, out_features, bias)
@@ -239,8 +269,8 @@ class Transformer(nn.Module):
         id_map = nn.Identity()
         for j in range(depth):
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, CenterNorm(dim), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-                PreNorm(dim, CenterNorm(dim), SLLRes(dim, mlp_dim))
+                PreNorm(dim, LayerProject(), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+                PreNorm(dim, LayerProject(), SLLRes(dim, mlp_dim))
             ]))
 
 
@@ -251,7 +281,7 @@ class Transformer(nn.Module):
         return x
 
 class ViT(nn.Module):
-    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 3, dim_head = 128, dropout = 0., emb_dropout = 0.):
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.):
         super().__init__()
         image_height, image_width = pair(image_size)
         patch_height, patch_width = pair(patch_size)
@@ -266,6 +296,11 @@ class ViT(nn.Module):
             Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
             SDPLin(patch_dim, dim),
         )
+        # self.to_patch_embedding = nn.Sequential(
+        #     Rearrange('b c (h p1) (w p2) -> b (h w) c p1 p2', p1 = patch_height, p2 = patch_width),
+        #     SDPConv(patch_dim, dim),
+        #     SDPConv()
+        # )  
 
         self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
         self.cls_token = nn.Parameter(torch.randn(1, 1, dim))
@@ -278,7 +313,7 @@ class ViT(nn.Module):
         self.to_latent = nn.Identity()
 
         self.mlp_head = nn.Sequential(
-            CenterNorm(dim),
+            LayerProject(dim),
             #nn.LayerNorm(dim),
             SDPLin(dim, num_classes)
         )
