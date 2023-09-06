@@ -52,7 +52,7 @@ class LayerProject(nn.Module):
         self.p = p
         self.vector = vector
     def forward(self, x):
-        if vector:
+        if self.vector:
             norm_x = torch.linalg.vector_norm(x, ord=self.p, dim=-1).unsqueeze(1)
         else:
             norm_x = torch.norm(x, p=self.p, dim=(-2,-1)).unsqueeze(1).unsqueeze(1)
