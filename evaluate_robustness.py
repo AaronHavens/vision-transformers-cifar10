@@ -42,9 +42,8 @@ net = ViT(
     emb_dropout = 0.0
 )
 
-checkpoint = torch.load('./checkpoint/{}-{}-ckpt.t7'.format(args.net, args.patch), map_location=torch.device('cpu'))
+checkpoint = torch.load('./checkpoint/{}-{}-ckpt.t7'.format(args.net, args.patch))#, map_location=torch.device('cpu'))
 net.load_state_dict(checkpoint['model'])
-
 trainset, testset = get_dataset(args)
 
 
