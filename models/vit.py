@@ -277,7 +277,7 @@ class Transformer(nn.Module):
                                         nn.Unflatten(1,(num_patches, dim)))
         for j in range(depth):
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, nn.Softmax(dim = -1), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+                PreNorm(dim, softmax_project, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
                 PreNorm(dim, CenterNorm(dim), SLLRes(dim, mlp_dim))
             ]))
 
