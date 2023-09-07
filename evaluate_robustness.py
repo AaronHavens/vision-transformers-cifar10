@@ -2,7 +2,53 @@ import torch
 from models.vit import ViT
 import argparse
 from data_utils import get_dataset
+from collections import OrderedDict
+import numpy as np
 
+from torch import nn
+
+
+class ViTAnalyzer(nn.Module):
+    def __init__(self, net, batch_size=100, eps=0.1):
+        super(ViTAnalyzer, self).__init__()
+        # extract components
+        self.net = net
+        self.layers = 6
+        self.heads = 8
+        self.n_patchs = 65
+        self.eps = eps
+        self.batch_size = batch_size
+        self.selected_outputs = {}
+        for l in range(self.layers):
+            self.net.transformer.layers[l][0].norm.register_forward_hook(self.getActivation('x_{}'.format(l)))
+            self.net.transformer.layers[l][0].fn.attend.register_forward_hook(self.getActivation('Px_{}'.format(l)))
+    
+    def getActivation(self, name):
+    # the hook signature
+        def hook(model, input, output):
+            self.selected_outputs[name] = output.detach()
+        return hook
+
+    def compute_bound_layer(self, Px, x, eps):
+        d = x.shape[-1]
+        Px_norm = torch.norm(Px, p=2, dim=(-2,-1))
+        x_norm = torch.norm(x, p='fro', dim=(-2,-1)).unsqueeze(-1)
+        beta = eps*torch.sqrt(2/d*(4*torch.square(x_norm) + eps**2)) * (x_norm + eps)
+        delta_heads = eps*Px_norm + beta
+        return torch.sum(delta_heads, -1, keepdim=True)
+
+    def compute_bound(self):
+        delta = torch.ones(self.batch_size,1)*self.eps
+        for l in range(self.layers):
+            Px = self.selected_outputs['Px_{}'.format(l)]
+            x = self.selected_outputs['x_{}'.format(l)]
+            delta = delta + self.compute_bound_layer(Px, x, delta)
+        return delta
+
+    def forward(self, x, y):
+        y_hat = self.net(x)
+        delta = self.compute_bound()
+        return y_hat, delta
 
 
 
@@ -29,7 +75,9 @@ args.rcpaste = True
 args.autoaugment = True
 imsize = int(args.size)
 size = imsize
-    # ViT for cifar10
+batch_size = 100
+eps = 0.1
+# ViT for cifar10
 net = ViT(
     image_size = size,
     patch_size = args.patch,
@@ -42,9 +90,23 @@ net = ViT(
     emb_dropout = 0.0
 )
 
-checkpoint = torch.load('./checkpoint/{}-{}-ckpt.t7'.format(args.net, args.patch))#, map_location=torch.device('cpu'))
-net.load_state_dict(checkpoint['model'])
+checkpoint = torch.load('./checkpoint/{}-{}-ckpt.t7'.format(args.net, args.patch), map_location=torch.device('cpu'))
+state_dict = checkpoint['model']
+new_state_dict = OrderedDict()
+for k, v in state_dict.items():
+    name = k[7:] # remove 'module.' of dataparallel
+    new_state_dict[name]=v
+
+net.load_state_dict(new_state_dict)
+net.eval()
 trainset, testset = get_dataset(args)
+testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False)
+
+X, Y = next(iter(testloader))
+
+va = ViTAnalyzer(net, batch_size=batch_size, eps=eps)
+Y, deltas = va(X, Y)
+print(deltas)
 
 
 
