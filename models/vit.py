@@ -267,13 +267,17 @@ class Attention(nn.Module):
         return self.to_out(out)
 
 class Transformer(nn.Module):
-    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):
+    def __init__(self, dim, depth, heads, dim_head, mlp_dim, num_patches, dropout = 0.):
         super().__init__()
         self.layers = nn.ModuleList([])
         id_map = nn.Identity()
+    
+        softmax_project = nn.Sequential(nn.Flatten(start_dim=1),
+                                        nn.Softmax(dim=-1),
+                                        nn.Unflatten(1,(num_patches, dim)))
         for j in range(depth):
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, CenterNorm(dim), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+                PreNorm(dim, nn.Softmax(dim = -1), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
                 PreNorm(dim, CenterNorm(dim), SLLRes(dim, mlp_dim))
             ]))
 
@@ -311,7 +315,7 @@ class ViT(nn.Module):
         #try without dropout, may be not needed
         self.dropout = nn.Dropout(emb_dropout)
 
-        self.transformer = Transformer(dim, depth, heads, dim_head, mlp_dim, dropout)
+        self.transformer = Transformer(dim, depth, heads, dim_head, mlp_dim, num_patches, dropout)
 
         self.pool = pool
         self.to_latent = nn.Identity()
