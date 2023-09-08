@@ -272,12 +272,12 @@ class Transformer(nn.Module):
         self.layers = nn.ModuleList([])
         id_map = nn.Identity()
     
-        softmax_project = nn.Sequential(nn.Flatten(start_dim=1),
-                                        nn.Softmax(dim=-1),
-                                        nn.Unflatten(1,(num_patches, dim)))
+        # softmax_project = nn.Sequential(nn.Flatten(start_dim=1),
+        #                                 nn.Softmax(dim=-1),
+        #                                 nn.Unflatten(1,(num_patches, dim)))
         for j in range(depth):
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, softmax_project, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
+                PreNorm(dim, LayerProject(), Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
                 PreNorm(dim, CenterNorm(dim), SLLRes(dim, mlp_dim))
             ]))
 

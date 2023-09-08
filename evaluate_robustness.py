@@ -31,7 +31,7 @@ class ViTAnalyzer(nn.Module):
 
     def compute_bound_layer(self, Px, x, eps):
         d = x.shape[-1]
-        Px_norm = torch.norm(Px, p=2, dim=(-2,-1))
+        Px_norm = torch.linalg.matrix_norm(Px, ord=2, dim=(-2,-1))
         x_norm = torch.norm(x, p='fro', dim=(-2,-1)).unsqueeze(-1)
         beta = eps*torch.sqrt(2/d*(4*torch.square(x_norm) + eps**2)) * (x_norm + eps)
         delta_heads = eps*Px_norm + beta
@@ -75,7 +75,7 @@ args.rcpaste = True
 args.autoaugment = True
 imsize = int(args.size)
 size = imsize
-batch_size = 100
+batch_size = 10
 eps = 0.1
 # ViT for cifar10
 net = ViT(
