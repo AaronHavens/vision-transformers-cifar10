@@ -252,7 +252,7 @@ elif args.opt == "sgd":
     optimizer = optim.SGD(net.parameters(), lr=args.lr)  
     
 # use cosine scheduling, use warmup period, increment on steps rather than epochs
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.n_epochs)
+#scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.n_epochs)
 
 ##### Training
 
@@ -336,7 +336,7 @@ for epoch in range(start_epoch, args.n_epochs):
     trainloss = train(epoch)
     val_loss, acc = test(epoch)
     
-    scheduler.step() # step cosine scheduling
+    #scheduler.step() # step cosine scheduling
     
     list_loss.append(val_loss)
     list_acc.append(acc)
